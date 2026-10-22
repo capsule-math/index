@@ -35,10 +35,9 @@ With an assistant that can run commands and use git (Claude Code, or similar),
 this prompt takes existing proof code all the way to a pull request:
 
 > Read the specification at https://github.com/capsule-math/spec (README.md and
-> entry.schema.json), the template at https://github.com/capsule-math/template,
-> and the example at https://github.com/capsule-math/marchal-conjecture. Turn my
-> proof code into a package following that spec, in a new repository created
-> from the template:
+> entry.schema.json) and the template at https://github.com/capsule-math/template,
+> Turn my proof code into a package following that spec, in a new repository
+> created from the template:
 >
 > 1. Separate what the checker verifies from how its inputs are obtained.
 >    Freeze inputs that are costly to produce (write them to `data/`, record
