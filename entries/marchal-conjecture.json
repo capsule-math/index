@@ -1,0 +1,20 @@
+{
+  "title": "Marchal's conjecture",
+  "authors": [
+    "Renato Calleja",
+    "Carlos García-Azpeitia",
+    "Olivier Hénot",
+    "Jean-Philippe Lessard",
+    "Jason D. Mireles James"
+  ],
+  "run": "julia --project=checker checker/verify.jl",
+  "paper": "Trans. Amer. Math. Soc. (2026), doi:10.1090/tran/9779; arXiv:2406.17564",
+  "keywords": [
+    "three-body problem",
+    "choreographies",
+    "periodic orbits",
+    "radii polynomial",
+    "Chebyshev–Fourier series"
+  ],
+  "location": "TODO: https://github.com/capsule-math/marchal-conjecture/tree/<commit> or https://doi.org/<new DOI>"
+}

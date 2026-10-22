@@ -1,0 +1,36 @@
+name: Check entries
+
+# Runs on every pull request that touches entries/. Read-only: it validates the
+# entries and reports pass/fail as the check status; it never writes to the
+# repository and never runs any package's code.
+
+on:
+  pull_request:
+    paths: ['entries/**']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Changed entries
+        id: changed
+        run: |
+          {
+            echo 'entries<<EOF'
+            git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'entries/*.json'
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: Validate
+        env:
+          ENTRIES: ${{ steps.changed.outputs.entries }}
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); include(".github/check_entries.jl")'
