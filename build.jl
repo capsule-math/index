@@ -61,3 +61,9 @@ $(join(rows))
 """
 write("index.html", page)
 println(length(rows), " entries")
+
+include("keywords.jl")
+groups, lookup = load_vocabulary("keywords.toml")
+bytag = write_tag_pages(entries, lookup; outdir = "site")
+# above the table:    tag_index_html(groups, bytag)
+# in each table row:  join(taglink.(entry_tags(e, lookup)), ", ")
