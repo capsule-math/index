@@ -4,17 +4,33 @@
 import Pkg; Pkg.instantiate()
 using JSON, Dates
 
-esc(s) = replace(string(s), "&" => "&amp;", "<" => "&lt;", ">" => "&gt;")
+esc(s) = replace(string(s), "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", "\"" => "&quot;")
+
+# Turn "doi:10.xxxx/yyy" and "arXiv:xxxx.xxxxx" (or old-style ids) into links.
+# Runs on already-escaped text; the identifiers themselves contain no & < > ".
+function linkify(t)
+    t = replace(t, r"(?i)\bdoi:\s*(10\.\d{4,9}/[^\s;,]*[^\s;,.)])" =>
+                   s"<a href=\"https://doi.org/\1\">doi:\1</a>")
+    t = replace(t, r"(?i)\barxiv:\s*((?:[a-z-]+(?:\.[a-z]{2})?/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?)" =>
+                   s"<a href=\"https://arxiv.org/abs/\1\">arXiv:\1</a>")
+    return t
+end
+
+function where(loc)
+    startswith(loc, "https://doi.org/10.5281/zenodo.") && return "Zenodo"
+    startswith(loc, "https://doi.org/")                && return "DOI"
+    startswith(loc, "https://github.com/")             && return "GitHub"
+    return "link"
+end
 
 rows = String[]
 for p in sort(filter(f -> endswith(f, ".json"), isdir("entries") ? readdir("entries"; join = true) : String[]))
     e = JSON.parsefile(p)
     loc = e["location"]
-    where = startswith(loc, "https://doi.org/") ? "DOI" : "GitHub"
     push!(rows, """<tr>
-  <td><a href="$(esc(loc))">$(esc(e["title"]))</a><br><span class="muted">$(esc(join(e["authors"], ", ")))</span></td>
-  <td>$(esc(get(e, "paper", "")))</td>
-  <td>$(where)</td>
+  <td>$(esc(e["title"]))<br><span class="muted">$(esc(join(e["authors"], ", ")))</span></td>
+  <td>$(linkify(esc(get(e, "paper", ""))))</td>
+  <td><a href="$(esc(loc))">$(where(loc))</a></td>
 </tr>""")
 end
 
