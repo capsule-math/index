@@ -2,7 +2,7 @@
 # of the entries a pull request adds or changes. Reads them as data only.
 using JSON, Downloads
 
-const LOCATION = r"^(https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/tree/([0-9a-f]{40})|https://doi\.org/10\.[0-9]+/\S+)$"
+const LOCATION = r"^(https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/tree/([0-9a-f]{40})((?:/[A-Za-z0-9_.-]+)*)|https://doi\.org/10\.[0-9]+/\S+)$"
 const FIELDS   = Set(["title", "authors", "run", "paper", "keywords", "produce", "location"])
 
 function resolves(url)
@@ -34,12 +34,13 @@ function check(path)
     loc = get(e, "location", "")
     m = loc isa AbstractString ? match(LOCATION, loc) : nothing
     if m === nothing
-        push!(errs, "location must be https://github.com/<owner>/<repo>/tree/<40-hex commit> or https://doi.org/<doi>")
+        push!(errs, "location must be https://github.com/<owner>/<repo>/tree/<40-hex commit>[/<folder>] or https://doi.org/<doi>")
     elseif !resolves(loc)
         push!(errs, "location does not resolve: $loc")
     elseif m.captures[2] !== nothing
         # GitHub: the package at that commit must have an entry.json agreeing with this one
-        raw = "https://raw.githubusercontent.com/$(m.captures[2])/$(m.captures[3])/$(m.captures[4])/entry.json"
+        base = "https://raw.githubusercontent.com/$(m.captures[2])/$(m.captures[3])/$(m.captures[4])$(something(m.captures[5], ""))"
+        raw = "$base/entry.json"
         pkg = try JSON.parse(String(take!(Downloads.download(raw, IOBuffer())))) catch; nothing end
         if pkg === nothing
             push!(errs, "no readable entry.json at that commit")
@@ -48,7 +49,7 @@ function check(path)
                 get(pkg, k, nothing) == get(e, k, nothing) || push!(errs, "$k differs from the package's entry.json")
             end
             for f in ("statement.md",)
-                resolves("https://raw.githubusercontent.com/$(m.captures[2])/$(m.captures[3])/$(m.captures[4])/$f") || push!(errs, "$f not found at that commit")
+                resolves("$base/$f") || push!(errs, "$f not found at that location")
             end
         end
     end
