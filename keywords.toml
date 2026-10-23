@@ -1,3 +1,8 @@
+# Suggested keywords for entries, grouped by heading.
+# Each line: canonical keyword = [synonyms]. Matching ignores case, dash style
+# and a trailing "s"; any synonym is shown as its canonical keyword.
+# Keywords not listed here are allowed and appear under "other".
+
 [equation]
 ODE = ["ordinary differential equation"]
 PDE = ["partial differential equation"]
@@ -12,7 +17,7 @@ equilibrium = ["fixed point"]
 "central configuration" = []
 "periodic orbit" = ["periodic solution"]
 "quasi-periodic orbit" = ["invariant torus"]
-"choreography" = ["choreographies", "choreographic solution"]
+choreography = ["choreographies", "choreographic solution"]
 "connecting orbit" = []
 "homoclinic orbit" = []
 "heteroclinic orbit" = []
@@ -30,7 +35,7 @@ chaos = []
 "Newton-Kantorovich" = ["Newton-Kantorovich theorem"]
 "interval Newton" = ["interval Newton method", "Krawczyk"]
 "rigorous integration" = ["validated integration", "rigorous ODE integration"]
-"Lohner" = ["Lohner algorithm", "Lohner method", "Lohner integrator"]
+Lohner = ["Lohner algorithm", "Lohner method", "Lohner integrator"]
 "validated continuation" = ["rigorous continuation"]
 "parameterization method" = []
 
