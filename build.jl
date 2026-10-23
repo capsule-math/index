@@ -52,7 +52,8 @@ function load_vocabulary(path)
     return groups, lookup
 end
 
-canonical(k, lookup) = get(lookup, normkey(k), String(strip(k)))
+canonical(k, lookup) = get(lookup, normkey(k),
+    String(replace(replace(strip(k), r"[‐‑‒–—]" => "-"), r"\s+" => " ")))
 entry_tags(e, lookup) = unique(canonical(k, lookup) for k in get(e, "keywords", String[]))
 taglink(k; prefix = "tags/") = """<a href="$(prefix)$(slug(k)).html">$(esc(k))</a>"""
 
