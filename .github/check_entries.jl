@@ -43,7 +43,7 @@ function check(path)
         raw = "$base/entry.json"
         pkg = try JSON.parse(String(take!(Downloads.download(raw, IOBuffer())))) catch; nothing end
         if pkg === nothing
-            push!(errs, "no readable entry.json at that commit")
+            push!(errs, "no readable entry.json at that location")
         else
             for k in ("title", "authors", "run")
                 get(pkg, k, nothing) == get(e, k, nothing) || push!(errs, "$k differs from the package's entry.json")
