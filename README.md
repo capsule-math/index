@@ -22,8 +22,10 @@ Open a pull request adding `entries/<package-name>.json`:
 ```
 
 That is, the package's `entry.json` with `location` added. The location is
-either `https://github.com/<owner>/<repo>/tree/<40-character commit>` or
-`https://doi.org/<doi>`; tags are not accepted.
+either `https://github.com/<owner>/<repo>/tree/<40-character commit>`, followed
+by `/<folder>` when the package is a folder of a larger repository, or
+`https://doi.org/<doi>`; tags are not accepted. A repository with several
+packages opens one entry per package (one pull request may add them all).
 
 A check runs on the pull request: valid entry, location resolves, and for a
 GitHub location, the package's own `entry.json` agrees with the entry. A
