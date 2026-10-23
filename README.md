@@ -47,7 +47,8 @@ created from the template:
 4. When I confirm, push the package (or tell me how to archive it on Zenodo if
    I prefer), then open a pull request to
    https://github.com/capsule-math/index adding `entries/<package-name>.json`
-   with `location` set to the commit or DOI.
+   (named after the theorem, lowercase-hyphenated) with `location` set to the
+   commit or DOI.
 
 If you cannot run commands, produce the files and tell me the remaining steps.
 ```
