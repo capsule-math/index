@@ -133,7 +133,7 @@ end
 n = length(entries)
 write("index.html", page("Proof packages", """
 <h1>Proof packages</h1>
-<p>Computer-assisted proofs packaged as statement + inputs + checker. Format: <a href="https://github.com/capsule-math/spec">spec</a>. $n $(n == 1 ? "entry" : "entries").</p>
+<p>Computer-assisted proofs packaged as statement + inputs + checker. Format: <a href="https://github.com/capsule-math/spec">spec</a>.<br><span class="muted">$n $(n == 1 ? "entry" : "entries")</span></p>
 $(overview())
 $(table(entries, "tags/"))
 """))
