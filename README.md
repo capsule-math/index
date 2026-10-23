@@ -8,20 +8,20 @@ from these files on every push to `main`.
 
 ## Listing a package
 
-Open a pull request adding `entries/<package-name>.json`.
+Open a pull request adding `entries/<package-name>.json`: the package's
+`entry.json` with `location` added.
 
-`<package-name>` is named after the theorem and must be lowercase-hyphenated (the
-check rejects anything else).
-
-That is, the package's `entry.json` with `location` added. The location is
-either `https://github.com/<owner>/<repo>/tree/<40-character commit>`, followed
-by `/<folder>` when the package is a folder of a larger repository, or
-`https://doi.org/<doi>`; tags are not accepted. A repository with several
-packages opens one entry per package (one pull request may add them all).
+- `<package-name>`: named after the theorem, lowercase-hyphenated.
+- `location`: `https://github.com/<owner>/<repo>/tree/<40-character commit>`,
+  plus `/<folder>` if the package is a folder of a larger repository, or
+  `https://doi.org/<doi>`. Tags are not accepted.
+- `keywords` (optional): prefer those in [`keywords.toml`](keywords.toml);
+  anything else is listed under "other".
+- Several packages in one repository: one entry each; one pull request may add
+  them all.
 
 A check runs on the pull request: valid entry, location resolves, and for a
-GitHub location, the package's own `entry.json` agrees with the entry. A
-maintainer then reads `statement.md`, runs the checker in a sandbox, and merges.
+GitHub location, the package's own `entry.json` agrees with the entry.
 
 ## Packaging a proof with an AI assistant
 
