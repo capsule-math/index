@@ -8,18 +8,10 @@ from these files on every push to `main`.
 
 ## Listing a package
 
-Open a pull request adding `entries/<package-name>.json`:
+Open a pull request adding `entries/<package-name>.json`.
 
-```json
-{
-  "title": "Marchal's conjecture",
-  "authors": ["…"],
-  "run": "julia --project=checker checker/verify.jl",
-  "paper": "Trans. Amer. Math. Soc. (2026), doi:10.1090/tran/9779; arXiv:2406.17564",
-  "keywords": ["three-body problem", "radii polynomial"],
-  "location": "https://github.com/<owner>/<repo>/tree/<commit>"
-}
-```
+`<package-name>` is named after the theorem and must be lowercase-hyphenated (the
+check rejects anything else).
 
 That is, the package's `entry.json` with `location` added. The location is
 either `https://github.com/<owner>/<repo>/tree/<40-character commit>`, followed
