@@ -40,6 +40,7 @@ Lohner = ["Lohner algorithm", "Lohner method", "Lohner integrator"]
 "parameterization method" = []
 
 [application]
-"celestial mechanics" = ["n-body problem"]
+"celestial mechanics" = []
+"n-body problem" = ["three-body problem", "four-body problem"]
 "fluid dynamics" = []
 "pattern formation" = []
