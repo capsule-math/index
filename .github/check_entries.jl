@@ -3,7 +3,7 @@
 using JSON, Downloads
 
 const LOCATION = r"^(https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/tree/([0-9a-f]{40})((?:/[A-Za-z0-9_.-]+)*)|https://doi\.org/10\.[0-9]+/\S+)$"
-const FIELDS   = Set(["title", "authors", "run", "paper", "keywords", "produce", "location"])
+const FIELDS   = Set(["title", "authors", "run", "cases", "paper", "keywords", "produce", "location"])
 
 function resolves(url)
     for method in ("HEAD", "GET")          # some hosts refuse HEAD
@@ -31,6 +31,14 @@ function check(path)
         k in FIELDS || push!(errs, "unknown field: $k")
     end
     haskey(e, "keywords") && !(e["keywords"] isa AbstractVector) && push!(errs, "keywords must be a list")
+    # cases: its keys must be exactly the placeholders {name} of run (the values are free)
+    names = Set(m.captures[1] for m in eachmatch(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", get(e, "run", "")))
+    c = get(e, "cases", nothing)
+    if c === nothing
+        isempty(names) || push!(errs, "run has placeholders $(join(sort!(collect(names)), ", ")) but no cases field")
+    elseif !(c isa AbstractDict) || Set(keys(c)) != names
+        push!(errs, "cases must be an object whose keys are the placeholders {name} of run")
+    end
     loc = get(e, "location", "")
     m = loc isa AbstractString ? match(LOCATION, loc) : nothing
     if m === nothing
@@ -45,7 +53,7 @@ function check(path)
         if pkg === nothing
             push!(errs, "no readable entry.json at that location")
         else
-            for k in ("title", "authors", "run")
+            for k in ("title", "authors", "run", "cases")
                 get(pkg, k, nothing) == get(e, k, nothing) || push!(errs, "$k differs from the package's entry.json")
             end
             for f in ("statement.md",)
