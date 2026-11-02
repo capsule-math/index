@@ -23,6 +23,25 @@ Open a pull request adding `entries/<package-name>.json`: the package's
 A check runs on the pull request: valid entry, location resolves, and for a
 GitHub location, the package's own `entry.json` agrees with the entry.
 
+The "Check" column of the site shows, for a package on GitHub whose repository
+runs the workflow below, the result of its latest check on the default branch
+(linked) and, when that is red, the latest green one.
+
+## Checking packages (reusable workflows)
+
+`.github/workflows/check-proofs.yml` runs every package of a repository (every
+directory with an `entry.json`), with its pinned Manifest and with the latest
+compatible dependencies, on the single `test_case` of each package (spec, §4–5);
+`.github/workflows/compathelper.yml` opens pull requests when a dependency
+moves out of `[compat]`. A package repository calls them from two short
+workflows, as shipped by [capsule-math/template](https://github.com/capsule-math/template):
+
+```yaml
+jobs:
+  check:
+    uses: capsule-math/index/.github/workflows/check-proofs.yml@main
+```
+
 ## Packaging a proof with an AI assistant
 
 With an assistant that can run commands and use git (Claude Code, or similar),

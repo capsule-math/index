@@ -3,6 +3,8 @@ name: Build and publish index
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '23 5 * * *'      # daily, to refresh the check statuses
   workflow_dispatch:
 
 permissions:
@@ -19,6 +21,8 @@ jobs:
         with:
           version: '1.10'
       - run: julia --project=. build.jl
+        env:
+          GITHUB_TOKEN: ${{ github.token }}   # raises the API rate limit for the check statuses
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

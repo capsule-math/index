@@ -1,0 +1,188 @@
+name: Check proofs
+
+# Reusable workflow (capsule-math/index): runs every proof package of the
+# calling repository, i.e. any directory containing an entry.json (the
+# repository root counts, so this works for a single package and for a
+# repository of many). A package repository calls it with
+#
+#   jobs:
+#     check:
+#       uses: capsule-math/index/.github/workflows/check-proofs.yml@main
+#       with:
+#         all_cases: ${{ inputs.all_cases || false }}
+#
+# from its own workflow triggered on push, pull_request, schedule and
+# workflow_dispatch (see capsule-math/template). Two modes:
+#
+#   pinned  — the checker exactly as recorded (Manifest.toml). Runs on push and
+#             pull request. A failure here means the record itself is broken.
+#   latest  — the checker with the newest dependency versions its [compat]
+#             allows (Manifest ignored). Runs on pull request (so CompatHelper's
+#             PRs test the new versions), on schedule, and by hand. On a
+#             scheduled failure it opens an issue. An alarm, not a promise.
+#
+# A package whose entry.json declares `cases` is checked on ONE test case: the
+# value of `test_case` if the entry declares it, otherwise the first value of
+# each placeholder (spec, section 4). The whole Cartesian product is run only
+# with the input all_cases = true; for some packages it takes days of CPU.
+#
+# Frozen inputs listed in data/hashes.json with a "url" and absent from the
+# checkout are downloaded and their SHA-256 verified before the checker runs.
+
+on:
+  workflow_call:
+    inputs:
+      all_cases:
+        description: 'Run every declared case (Cartesian product of `cases`) instead of one test case'
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.find.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: find
+        run: |
+          pkgs=$(find . -name entry.json -not -path './.git/*' -printf '%h\n' | sed 's|^\./||; s|^\.$|.|' | sort | jq -R . | jq -cs .)
+          echo "packages=$pkgs" >> "$GITHUB_OUTPUT"
+          echo "found: $pkgs"
+
+  check:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.discover.outputs.packages) }}
+        mode: [pinned, latest]
+        exclude:
+          # on push to main, only the pinned record is checked
+          - mode: ${{ github.event_name == 'push' && 'latest' || 'none' }}
+          # on the monthly schedule, only latest is checked
+          - mode: ${{ github.event_name == 'schedule' && 'pinned' || 'none' }}
+    name: ${{ matrix.package }} (${{ matrix.mode }})
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Julia version (Manifest's for pinned, newest for latest)
+        id: jv
+        run: |
+          v=1
+          if [ "${{ matrix.mode }}" = "pinned" ] && [ -f checker/Manifest.toml ]; then
+            v=$(sed -n 's/^julia_version = "\(.*\)"/\1/p' checker/Manifest.toml)
+          fi
+          echo "version=${v:-1}" >> "$GITHUB_OUTPUT"
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ steps.jv.outputs.version }}
+
+      - uses: julia-actions/cache@v2
+
+      - name: Fetch frozen inputs listed with a URL
+        run: |
+          julia -e '
+            using Downloads, SHA
+            f = joinpath("data", "hashes.json")
+            isfile(f) || exit(0)
+            # minimal parse: avoid a JSON dependency outside the checker env
+            s = read(f, String)
+            for m in eachmatch(r"\"([^\"]+)\"\s*:\s*\{([^}]*)\}", s)
+                name, body = m.captures
+                h = match(r"\"sha256\"\s*:\s*\"([0-9a-f]{64})\"", body)
+                u = match(r"\"url\"\s*:\s*\"([^\"]+)\"", body)
+                path = joinpath("data", name)
+                if !isfile(path) && u !== nothing
+                    println("downloading ", name)
+                    Downloads.download(u[1], path)
+                end
+                if isfile(path) && h !== nothing
+                    got = bytes2hex(open(sha256, path))
+                    got == h[1] || error("sha256 mismatch for $name")
+                    println("pass sha256 ", name)
+                end
+            end'
+
+      - name: Prepare the checker environment (${{ matrix.mode }})
+        run: |
+          if [ "${{ matrix.mode }}" = "latest" ]; then
+            rm -f checker/Manifest.toml
+            julia --project=checker -e 'using Pkg; Pkg.resolve(); Pkg.instantiate(); Pkg.status()'
+          else
+            julia --project=checker -e 'using Pkg; Pkg.instantiate(); Pkg.status()'
+          fi
+
+      - name: Run the checker (the test case, or every case on request)
+        env:
+          ALL_CASES: ${{ inputs.all_cases && 'true' || 'false' }}
+        run: |
+          # The placeholders {name} of `run` take their values from `cases`: an
+          # array enumerates values, a string "a:b" / "a:step:b" is an integer
+          # range, any other value is a single value. By default one test case
+          # is run: `test_case` of entry.json (one value per placeholder, which
+          # must be among the declared values), or else the first value of each
+          # placeholder; with ALL_CASES=true the whole Cartesian product is.
+          # Without `cases`, `run` is executed once. Every run must exit 0.
+          python3 - <<'PY' > cmds.txt
+          import itertools, json, os, re
+          e = json.load(open("entry.json"))
+          run = e["run"]
+          names = re.findall(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", run)
+          cases = e.get("cases", {})
+          assert set(names) == set(cases), f"placeholders {names} vs cases {list(cases)}"
+          def values(v):
+              if isinstance(v, list):
+                  return v
+              if isinstance(v, str) and re.fullmatch(r"-?\d+:(-?\d+:)?-?\d+", v):
+                  p = [int(x) for x in v.split(":")]
+                  return range(p[0], p[-1] + 1, p[1] if len(p) == 3 else 1)
+              return [v]
+          every = os.environ.get("ALL_CASES") == "true"
+          test = e.get("test_case", {})
+          assert not test or set(test) == set(names), f"test_case {list(test)} vs placeholders {names}"
+          for n in test:
+              assert str(test[n]) in map(str, values(cases[n])), f"test_case {n} = {test[n]} is not among the declared cases"
+          def selected(n):
+              v = values(cases[n])
+              return v if every else [test[n]] if test else [v[0]]
+          for combo in itertools.product(*(selected(n) for n in names)):
+              print(run.format(**dict(zip(names, map(str, combo)))))
+          PY
+          [ -s cmds.txt ] || { echo "no run command in entry.json"; exit 1; }
+          if [ -n "$(python3 -c 'import json; print(json.load(open("entry.json")).get("cases", ""))')" ] && [ "$ALL_CASES" != "true" ]; then
+            echo "test case only (the theorem needs every case, see statement.md)"
+          fi
+          echo "$(wc -l < cmds.txt) run(s)"
+          while IFS= read -r cmd; do
+            echo "> $cmd"
+            bash -c "$cmd" || exit 1
+          done < cmds.txt
+
+      - name: Open an issue when the latest check fails on schedule
+        if: failure() && matrix.mode == 'latest' && github.event_name == 'schedule'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PKG: ${{ matrix.package }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Checker fails with latest dependencies: $PKG"
+          existing=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          body="The monthly check of \`$PKG\` with the newest compatible dependency versions failed. The pinned record is unaffected. Log: $RUN_URL"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

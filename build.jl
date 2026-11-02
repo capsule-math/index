@@ -2,7 +2,7 @@
 # Render entries/*.json into index.html, and one page per keyword in tags/.
 # Run from this directory:  julia --project=. build.jl
 import Pkg; Pkg.instantiate()
-using JSON, Dates, TOML
+using JSON, Dates, TOML, Downloads
 
 esc(s) = replace(string(s), "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", "\"" => "&quot;")
 
@@ -82,12 +82,75 @@ $body
 <footer>generated $(Dates.format(today(), "yyyy-mm-dd"))</footer>
 """
 
+# ---- check status (GitHub Actions) -------------------------------------------
+# For a package hosted on GitHub whose repository calls the reusable workflow
+# .github/workflows/check-proofs.yml of this repository (see README): the
+# result of the job "<folder> (pinned)" of the latest completed run on the
+# default branch, linked, and, when that run is not green, the latest run in
+# which the job was green. Needs the network; GITHUB_TOKEN (set by pages.yml)
+# raises the API rate limit. Anything that fails degrades to "n/a".
+
+const API = "https://api.github.com"
+
+function api(path)
+    headers = ["Accept" => "application/vnd.github+json", "User-Agent" => "capsule-math-index"]
+    haskey(ENV, "GITHUB_TOKEN") && push!(headers, "Authorization" => "Bearer " * ENV["GITHUB_TOKEN"])
+    io = IOBuffer()
+    r = Downloads.request(API * path; output = io, headers, throw = false)
+    r isa Downloads.Response && r.status == 200 || return nothing
+    return JSON.parse(String(take!(io)))
+end
+
+# location → (owner, repo, folder), folder "." for a package at the root
+function github_package(loc)
+    m = match(r"^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/tree/[0-9a-f]{40}((?:/[A-Za-z0-9_.-]+)*)$", loc)
+    m === nothing && return nothing
+    return (m[1], m[2], isempty(m[3]) ? "." : m[3][2:end])
+end
+
+shortdate(t) = Dates.format(DateTime(t[1:19]), "yyyy-mm-dd")
+
+# "<name> (pinned)" job of a run: its conclusion and the run's URL
+function package_job(owner, repo, run, name)
+    jobs = api("/repos/$owner/$repo/actions/runs/$(run["id"])/jobs?per_page=100")
+    jobs === nothing && return nothing
+    for j in jobs["jobs"]
+        j["name"] == "$name (pinned)" && return j["conclusion"]
+    end
+    return nothing
+end
+
+function check_status(loc)
+    pkg = github_package(loc)
+    pkg === nothing && return """<span class="muted">—</span>"""
+    owner, repo, name = pkg
+    runs = api("/repos/$owner/$repo/actions/runs?event=push&status=completed&per_page=$(haskey(ENV, "GITHUB_TOKEN") ? 30 : 8)")
+    runs === nothing && return """<span class="muted">n/a</span>"""
+    runs = [r for r in runs["workflow_runs"] if r["name"] == "Check proofs"]
+    latest = nothing
+    for r in runs
+        c = package_job(owner, repo, r, name)
+        c in ("success", "failure") || continue        # no verdict on this package (cancelled, skipped, absent)
+        link(mark) = """<a href="$(esc(r["html_url"]))">$(mark)$(r["head_sha"][1:7]) $(shortdate(r["updated_at"]))</a>"""
+        if latest === nothing
+            latest = (c == "success", link(c == "success" ? "✓ " : "✗ "))
+            latest[1] && return latest[2]
+        elseif c == "success"
+            return latest[2] * """<br><span class="muted">last green: $(link(""))</span>"""
+        end
+    end
+    latest === nothing && return """<span class="muted">no run</span>"""
+    return latest[2] * """<br><span class="muted">no green run found</span>"""
+end
+
 # ---- entries -------------------------------------------------------------------
 
 groups, lookup = load_vocabulary("keywords.toml")
 
 entries = [JSON.parsefile(p) for p in sort(filter(f -> endswith(f, ".json"),
            isdir("entries") ? readdir("entries"; join = true) : String[]))]
+
+const STATUS = Dict{String,String}()   # location => rendered check status (one query per package)
 
 function row(e, prefix)
     loc  = e["location"]
@@ -97,11 +160,12 @@ function row(e, prefix)
   <td>$(esc(e["title"]))<br><span class="muted">$(esc(join(e["authors"], ", ")))</span>$kw</td>
   <td>$(linkify(esc(get(e, "paper", ""))))</td>
   <td><a href="$(esc(loc))">$(where(loc))</a></td>
+  <td>$(get!(() -> check_status(loc), STATUS, loc))</td>
 </tr>"""
 end
 
 table(es, prefix) = """<table>
-<tr><th>Theorem</th><th>Paper</th><th>Location</th></tr>
+<tr><th>Theorem</th><th>Paper</th><th>Location</th><th>Check</th></tr>
 $(join((row(e, prefix) for e in es), "\n"))
 </table>"""
 

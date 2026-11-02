@@ -3,7 +3,7 @@
 using JSON, Downloads
 
 const LOCATION = r"^(https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/tree/([0-9a-f]{40})((?:/[A-Za-z0-9_.-]+)*)|https://doi\.org/10\.[0-9]+/\S+)$"
-const FIELDS   = Set(["title", "authors", "run", "cases", "paper", "keywords", "produce", "location"])
+const FIELDS   = Set(["title", "authors", "run", "cases", "test_case", "paper", "keywords", "produce", "location"])
 
 function resolves(url)
     for method in ("HEAD", "GET")          # some hosts refuse HEAD
@@ -14,6 +14,15 @@ function resolves(url)
         end
     end
     return false
+end
+
+# the values a case declaration enumerates: a list, or an integer range "a:b" / "a:step:b"
+function declared(v)
+    v isa AbstractVector && return v
+    m = v isa AbstractString ? match(r"^(-?\d+):(?:(-?\d+):)?(-?\d+)$", v) : nothing
+    m === nothing && return Any[v]
+    a, s, b = parse(Int, m[1]), m[2] === nothing ? 1 : parse(Int, m[2]), parse(Int, m[3])
+    return collect(a:s:b)
 end
 
 function check(path)
@@ -39,6 +48,17 @@ function check(path)
     elseif !(c isa AbstractDict) || Set(keys(c)) != names
         push!(errs, "cases must be an object whose keys are the placeholders {name} of run")
     end
+    # test_case: one declared value per placeholder (spec, section 5)
+    t = get(e, "test_case", nothing)
+    if t !== nothing
+        if !(c isa AbstractDict) || !(t isa AbstractDict) || Set(keys(t)) != names
+            push!(errs, "test_case must be an object with the keys of cases")
+        else
+            for (k, v) in t
+                v in declared(c[k]) || push!(errs, "test_case $k = $v is not among the declared cases")
+            end
+        end
+    end
     loc = get(e, "location", "")
     m = loc isa AbstractString ? match(LOCATION, loc) : nothing
     if m === nothing
@@ -53,7 +73,7 @@ function check(path)
         if pkg === nothing
             push!(errs, "no readable entry.json at that location")
         else
-            for k in ("title", "authors", "run", "cases")
+            for k in ("title", "authors", "run", "cases", "test_case")
                 get(pkg, k, nothing) == get(e, k, nothing) || push!(errs, "$k differs from the package's entry.json")
             end
             for f in ("statement.md",)

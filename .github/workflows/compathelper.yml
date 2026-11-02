@@ -1,0 +1,46 @@
+name: CompatHelper
+
+# Reusable workflow (capsule-math/index): opens a pull request in the calling
+# repository whenever a dependency of one of its checkers releases a version
+# outside its [compat] bounds. The check-proofs workflow then runs the "latest"
+# job on that pull request: green means the proof still passes with the new
+# version, red means the checker is out of sync. Every checker/ directory of
+# the calling repository is watched. Call it with `secrets: inherit` from a
+# workflow on a schedule (see capsule-math/template).
+#
+# Note: pull requests opened with the default GITHUB_TOKEN do not trigger other
+# workflows. For the checks to run on CompatHelper's PRs automatically, add an
+# SSH deploy key as described at
+# https://juliaregistries.github.io/CompatHelper.jl/dev/#Creating-SSH-Key
+# and store its private half as the secret COMPATHELPER_PRIV of the calling
+# repository. Without it, the PRs still appear; close and reopen one to trigger
+# the checks.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  CompatHelper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Find checker environments
+        id: dirs
+        run: |
+          dirs=$(find . -path ./.git -prune -o -type f -path '*/checker/Project.toml' -printf '%h\n' | sed 's|^\./||' | sort | jq -R . | jq -cs .)
+          echo "subdirs=$dirs" >> "$GITHUB_OUTPUT"
+          echo "watching: $dirs"
+      - name: Install CompatHelper
+        run: julia -e 'using Pkg; Pkg.add("CompatHelper")'
+      - name: Run CompatHelper
+        run: julia -e 'using CompatHelper; CompatHelper.main(; subdirs = ${{ steps.dirs.outputs.subdirs }})'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMPATHELPER_PRIV: ${{ secrets.COMPATHELPER_PRIV }}
