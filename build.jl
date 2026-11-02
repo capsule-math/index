@@ -110,12 +110,13 @@ end
 
 shortdate(t) = Dates.format(DateTime(t[1:19]), "yyyy-mm-dd")
 
-# "<name> (pinned)" job of a run: its conclusion and the run's URL
+# conclusion of the job "<name> (pinned)" of a run; through the reusable workflow
+# the job is named "<caller job> / <name> (pinned)", hence the suffix match
 function package_job(owner, repo, run, name)
     jobs = api("/repos/$owner/$repo/actions/runs/$(run["id"])/jobs?per_page=100")
     jobs === nothing && return nothing
     for j in jobs["jobs"]
-        j["name"] == "$name (pinned)" && return j["conclusion"]
+        (j["name"] == "$name (pinned)" || endswith(j["name"], "/ $name (pinned)")) && return j["conclusion"]
     end
     return nothing
 end
