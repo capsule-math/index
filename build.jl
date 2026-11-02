@@ -16,6 +16,17 @@ function linkify(t)
     return t
 end
 
+# One line per reference (the paper field separates them with ";"); a
+# reference ending in its doi links its text to the doi instead of showing it.
+function paper_refs(p)
+    refs = filter(!isempty, strip.(split(p, ';')))
+    return join(map(refs) do r
+        m = match(r"(?i)^(.*?)[,\s]*\bdoi:\s*(10\.\d{4,9}/\S*[^\s.,)])$", r)
+        m === nothing || isempty(m[1]) ? linkify(esc(r)) :
+            """<a href="https://doi.org/$(esc(m[2]))">$(esc(m[1]))</a>"""
+    end, "<br>")
+end
+
 function where(loc)
     startswith(loc, "https://doi.org/10.5281/zenodo.") && return "Zenodo"
     startswith(loc, "https://doi.org/")                && return "DOI"
@@ -69,7 +80,8 @@ const STYLE = """<style>
   td{border-bottom:1px solid #000}
   .muted,.muted a{color:#666}
   .tags{margin:0 0 2rem;font-size:.85rem}
-  .tags div{margin:.15rem 0}
+  .tags div,.tags details{margin:.15rem 0}
+  .tags summary{cursor:pointer}
   footer{margin-top:2rem;font-size:.75rem;color:#666}
 </style>"""
 
@@ -86,8 +98,8 @@ $body
 # For a package hosted on GitHub whose repository calls the reusable workflow
 # .github/workflows/check-proofs.yml of this repository (see README): the
 # result of the job "<folder> (pinned)" of the latest completed run on the
-# default branch, linked, and, when that run is not green, the latest run in
-# which the job was green. Needs the network; GITHUB_TOKEN (set by pages.yml)
+# default branch, as ✓ or ✗ linked to the run (commit and date on hover).
+# Needs the network; GITHUB_TOKEN (set by pages.yml)
 # raises the API rate limit. Anything that fails degrades to "n/a".
 
 const API = "https://api.github.com"
@@ -128,20 +140,12 @@ function check_status(loc)
     runs = api("/repos/$owner/$repo/actions/runs?event=push&status=completed&per_page=$(haskey(ENV, "GITHUB_TOKEN") ? 30 : 8)")
     runs === nothing && return """<span class="muted">n/a</span>"""
     runs = [r for r in runs["workflow_runs"] if r["name"] == "Check proofs"]
-    latest = nothing
     for r in runs
         c = package_job(owner, repo, r, name)
         c in ("success", "failure") || continue        # no verdict on this package (cancelled, skipped, absent)
-        link(mark) = """<a href="$(esc(r["html_url"]))">$(mark)$(r["head_sha"][1:7]) $(shortdate(r["updated_at"]))</a>"""
-        if latest === nothing
-            latest = (c == "success", link(c == "success" ? "✓ " : "✗ "))
-            latest[1] && return latest[2]
-        elseif c == "success"
-            return latest[2] * """<br><span class="muted">last green: $(link(""))</span>"""
-        end
+        return """<a href="$(esc(r["html_url"]))" title="$(r["head_sha"][1:7]) $(shortdate(r["updated_at"]))">$(c == "success" ? "✓" : "✗")</a>"""
     end
-    latest === nothing && return """<span class="muted">no run</span>"""
-    return latest[2] * """<br><span class="muted">no green run found</span>"""
+    return """<span class="muted">no run</span>"""
 end
 
 # ---- entries -------------------------------------------------------------------
@@ -159,7 +163,7 @@ function row(e, prefix)
     kw   = isempty(tags) ? "" : """<br><span class="muted">$(join(taglink.(tags; prefix), ", "))</span>"""
     """<tr>
   <td>$(esc(e["title"]))<br><span class="muted">$(esc(join(e["authors"], ", ")))</span>$kw</td>
-  <td>$(linkify(esc(get(e, "paper", ""))))</td>
+  <td>$(paper_refs(get(e, "paper", "")))</td>
   <td><a href="$(esc(loc))">$(where(loc))</a></td>
   <td>$(get!(() -> check_status(loc), STATUS, loc))</td>
 </tr>"""
@@ -188,8 +192,8 @@ function overview()
               join(("$(taglink(t)) ($(length(bytag[t])))" for t in used), ", ") * "</div>")
     end
     other = sort([k for k in keys(bytag) if !(k in listed)], by = lowercase)
-    isempty(other) || push!(lines, "<div>other: " *
-        join(("$(taglink(t)) ($(length(bytag[t])))" for t in other), ", ") * "</div>")
+    isempty(other) || push!(lines, "<details><summary>other ($(length(other)))</summary>" *
+        join(("$(taglink(t)) ($(length(bytag[t])))" for t in other), ", ") * "</details>")
     return isempty(lines) ? "" : """<div class="tags">$(join(lines, "\n"))</div>"""
 end
 

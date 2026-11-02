@@ -24,8 +24,8 @@ A check runs on the pull request: valid entry, location resolves, and for a
 GitHub location, the package's own `entry.json` agrees with the entry.
 
 The "Check" column of the site shows, for a package on GitHub whose repository
-runs the workflow below, the result of its latest check on the default branch
-(linked) and, when that is red, the latest green one.
+runs the workflow below, the result of its latest check on the default branch:
+✓ or ✗, linked to the run.
 
 ## Checking packages (reusable workflows)
 
