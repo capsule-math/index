@@ -8,6 +8,11 @@ name: CompatHelper
 # the calling repository is watched. Call it with `secrets: inherit` from a
 # workflow on a schedule (see capsule-math/template).
 #
+# Required: in the calling repository, tick Settings > Actions > General >
+# Workflow permissions > "Allow GitHub Actions to create and approve pull
+# requests". Without it, CompatHelper pushes its branch but fails when opening
+# the pull request, leaving a stray compathelper/new_version/... branch.
+#
 # Note: pull requests opened with the default GITHUB_TOKEN do not trigger other
 # workflows. For the checks to run on CompatHelper's PRs automatically, add an
 # SSH deploy key as described at
