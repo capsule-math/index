@@ -1,0 +1,32 @@
+{
+  "title": "Rigorous Chebyshev continuation of the Cahn-Hilliard steady-state manifold and SKT branches",
+  "authors": [
+    "Maxime Breden",
+    "Olivier Hénot"
+  ],
+  "run": "julia --project=checker checker/verify.jl {example}",
+  "cases": {
+    "example": [
+      "cube_root",
+      "square_root",
+      "cahn_hilliard",
+      "skt"
+    ]
+  },
+  "test_case": {
+    "example": "cahn_hilliard"
+  },
+  "paper": "arXiv:2609.22689",
+  "keywords": [
+    "rigorous continuation",
+    "Chebyshev series",
+    "pseudo-arclength continuation",
+    "multi-parameter continuation",
+    "Cahn-Hilliard equation",
+    "Shigesada-Kawasaki-Teramoto system",
+    "steady states",
+    "radii polynomial"
+  ],
+  "produce": "julia --project=search search/produce.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/chebyshev-rigorous-continuation"
+}

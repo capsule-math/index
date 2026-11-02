@@ -1,0 +1,25 @@
+{
+  "title": "Bianchi VIII and IX periodic orbits in Hořava-Lifshitz cosmologies",
+  "authors": [
+    "Kevin E. M. Church",
+    "Olivier Hénot",
+    "Phillipo Lappicy",
+    "Jean-Philippe Lessard",
+    "Hauke Sprink"
+  ],
+  "run": "julia --project=checker checker/verify.jl {case}",
+  "cases": {
+    "case": "1:18"
+  },
+  "paper": "Gen. Relativ. Gravit. 55 (2023), 2, doi:10.1007/s10714-022-03054-8; arXiv:2203.03763",
+  "keywords": [
+    "Hořava-Lifshitz cosmology",
+    "Bianchi models",
+    "periodic orbits",
+    "radii polynomial",
+    "Fourier series",
+    "interval arithmetic"
+  ],
+  "produce": "julia --project=search search/produce.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/horava-lifshitz-periodic-orbits"
+}

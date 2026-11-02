@@ -1,0 +1,20 @@
+{
+  "title": "Validated unstable manifolds of DDEs: delayed van der Pol, SEIR, Mackey-Glass",
+  "authors": [
+    "Olivier Hénot",
+    "Jean-Philippe Lessard",
+    "Jason D. Mireles James"
+  ],
+  "run": "julia --project=checker checker/verify.jl",
+  "paper": "J. Dyn. Differ. Equ. 34 (2022), 1285-1324, doi:10.1007/s10884-021-10002-8",
+  "keywords": [
+    "delay differential equations",
+    "unstable manifolds",
+    "parameterization method",
+    "Taylor series",
+    "radii polynomial",
+    "interval arithmetic"
+  ],
+  "produce": "julia --project=search search/produce.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/dde-unstable-manifolds"
+}

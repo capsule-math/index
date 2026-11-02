@@ -92,7 +92,7 @@ for p in paths
     if isempty(errs)
         println("pass ", p)
     else
-        bad = true
+        global bad = true
         println("fail ", p)
         foreach(x -> println("     ", x), errs)
     end

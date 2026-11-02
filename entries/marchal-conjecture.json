@@ -14,7 +14,8 @@
     "choreographies",
     "periodic orbits",
     "radii polynomial",
-    "Chebyshev–Fourier series"
+    "Chebyshev-Fourier series"
   ],
-  "location": "TODO: https://github.com/capsule-math/marchal-conjecture/tree/<commit> or https://doi.org/<new DOI>"
+  "produce": "julia --project=search search/find_candidate.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/marchal-conjecture"
 }
