@@ -59,12 +59,15 @@ created from the template:
    behind a `produce` command. Keep the checker's arithmetic identical to my
    original verification.
 2. Make the checker print each condition as pass/fail with its enclosure and
-   exit 0 iff all pass. Run it and show me the output.
+   exit 0 iff all pass. Run it and show me the output. If the proof is made of
+   independent cases, declare them in `cases` of entry.json and name a
+   `test_case` that runs in minutes.
 3. Draft `statement.md` and `entry.json`. Ask me what you cannot determine
    from the code: which lemma each condition corresponds to, what the inputs
    mean, the paper reference.
 4. When I confirm, push the package (or tell me how to archive it on Zenodo if
-   I prefer), then open a pull request to
+   I prefer), wait for the repository's check (the workflow shipped by the
+   template) to be green, then open a pull request to
    https://github.com/capsule-math/index adding `entries/<package-name>.json`
    (named after the theorem, lowercase-hyphenated) with `location` set to the
    commit or DOI.
