@@ -1,0 +1,20 @@
+{
+  "title": "Transverse heteroclinic orbit in the Shimizu-Morioka system",
+  "authors": [
+    "Olivier Hénot",
+    "Akitoshi Takayasu"
+  ],
+  "run": "julia --project=checker checker/verify.jl",
+  "paper": "arXiv:2605.07500",
+  "keywords": [
+    "Shimizu-Morioka system",
+    "heteroclinic orbits",
+    "invariant manifolds",
+    "parameterization method",
+    "radii polynomial",
+    "Taylor series",
+    "Chebyshev series"
+  ],
+  "produce": "julia --project=search search/produce.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/shimizu-morioka-heteroclinic-orbit"
+}

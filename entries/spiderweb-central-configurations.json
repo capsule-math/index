@@ -1,0 +1,26 @@
+{
+  "title": "Spiderweb central configurations for 5 ≤ n ≤ 100 circles and 18 ≤ ℓ ≤ 200 half-lines",
+  "authors": [
+    "Olivier Hénot",
+    "Christiane Rousseau"
+  ],
+  "run": "julia --project=checker checker/verify.jl {n} {l}",
+  "cases": {
+    "n": "5:100",
+    "l": "18:200"
+  },
+  "test_case": {
+    "n": 20,
+    "l": 109
+  },
+  "paper": "Qual. Theory Dyn. Syst. 18 (2019), 1135-1160, doi:10.1007/s12346-019-00330-y; arXiv:1810.09915",
+  "keywords": [
+    "n-body problem",
+    "central configurations",
+    "spiderweb configurations",
+    "radii polynomial",
+    "interval arithmetic"
+  ],
+  "produce": "julia --project=search search/produce.jl",
+  "location": "https://github.com/OlivierHnt/computer-assisted-proofs/tree/d7120fe23c85f4c2b36579e2f70a9ade04c52fb5/spiderweb-central-configurations"
+}
